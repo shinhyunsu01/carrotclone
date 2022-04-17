@@ -1,6 +1,13 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+
+interface EnterForm {
+	email?: string;
+	phone?: string;
+}
 
 export default function Enter() {
+	const { register } = useForm<EnterForm>();
 	const [method, setMethod] = useState<"email" | "phone">("email");
 	const onEmailClick = () => setMethod("email");
 	const onPhoneClick = () => setMethod("phone");
@@ -34,7 +41,7 @@ export default function Enter() {
 						</button>
 					</div>
 				</div>
-				<form className="flex flex-col mt-8">
+				<form className="flex flex-col mt-8 space-y-4">
 					<label htmlFor="input" className="text-sm font-medium text-gray-700">
 						{method === "email" ? "Email address" : null}
 						{method === "phone" ? "Phone number" : null}
@@ -42,6 +49,7 @@ export default function Enter() {
 					<div className="mt-1">
 						{method === "email" ? (
 							<input
+								{...register("email")}
 								id="input"
 								type="email"
 								className="appearance-none w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-400 focus:border-orange-500"
