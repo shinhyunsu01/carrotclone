@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import Button from "@components/button";
+import Input from "@components/input";
+import useMutation from "@libs/client/useMutation";
 
 interface EnterForm {
 	email?: string;
@@ -7,10 +10,32 @@ interface EnterForm {
 }
 
 export default function Enter() {
-	const { register } = useForm<EnterForm>();
+	const [enter, { loading, data, error }] = useMutation("/api/users/enter");
+	const [submitting, setSubmitting] = useState(false);
+	const { register, handleSubmit, reset } = useForm<EnterForm>();
 	const [method, setMethod] = useState<"email" | "phone">("email");
-	const onEmailClick = () => setMethod("email");
-	const onPhoneClick = () => setMethod("phone");
+	const onEmailClick = () => {
+		reset();
+		setMethod("email");
+	};
+	const onPhoneClick = () => {
+		reset();
+		setMethod("phone");
+	};
+	const onValid = async (validForm: EnterForm) => {
+		enter(validForm);
+		/*setSubmitting(true);
+		await fetch("/api/users/enter", {
+			method: "POST",
+			body: JSON.stringify(data),
+			headers: {
+				"Content-Type": "application/json",
+			},
+		}).then(() => {
+			setSubmitting(false);
+		});*/
+	};
+	console.log(loading, data, error);
 
 	return (
 		<div className="mt-16 px-4">
@@ -41,39 +66,37 @@ export default function Enter() {
 						</button>
 					</div>
 				</div>
-				<form className="flex flex-col mt-8 space-y-4">
-					<label htmlFor="input" className="text-sm font-medium text-gray-700">
-						{method === "email" ? "Email address" : null}
-						{method === "phone" ? "Phone number" : null}
-					</label>
-					<div className="mt-1">
-						{method === "email" ? (
-							<input
-								{...register("email")}
-								id="input"
-								type="email"
-								className="appearance-none w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-400 focus:border-orange-500"
-								required
-							/>
-						) : null}
-						{method === "phone" ? (
-							<div className="flex rounded-md shadow-sm ">
-								<span className="flex items-center justify-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 select-none">
-									+82
-								</span>
-								<input
-									id="input"
-									type="number"
-									className="appearance-none w-full px-3 py-2 border border-gray-300 rounded-md  rounded-l-none shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-400 focus:border-orange-500"
-									required
-								/>
-							</div>
-						) : null}
-					</div>
-					<button className="mt-5 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 focus:outline-none">
-						{method === "email" ? "Get login link" : null}
-						{method === "phone" ? "Get one-time password" : null}
-					</button>
+				<form
+					onSubmit={handleSubmit(onValid)}
+					className="flex flex-col mt-8 space-y-4"
+				>
+					{method === "email" ? (
+						<Input
+							register={register("email", {
+								required: true,
+							})}
+							name="email"
+							label="Email addresss"
+							type="email"
+							required
+						/>
+					) : null}
+					{method === "phone" ? (
+						<Input
+							register={register("phone", {
+								required: true,
+							})}
+							name="phone"
+							label="Email addresss"
+							type="number"
+							kind="phone"
+							required
+						/>
+					) : null}
+					{method === "email" ? <Button text={"Get login link"} /> : null}
+					{method === "phone" ? (
+						<Button text={submitting ? "Loading" : "Get one-time password"} />
+					) : null}
 				</form>
 				<div className="mt-8">
 					<div className="relative">
