@@ -9,28 +9,16 @@ async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse<ResponseType>
 ) {
-	const { token } = req.body;
-	const foundToken = await client.token.findUnique({
-		where: {
-			payload: token,
-		},
+	const profile = await client.user.findUnique({
+		where: { id: req.session.user?.id },
 	});
-	console.log("foundToken", foundToken, token);
-	if (!foundToken) return res.status(404).end();
-
-	req.session.user = {
-		id: foundToken.userId,
-	};
-	await req.session.save();
-	await client.token.deleteMany({
-		where: {
-			userId: foundToken.userId,
-		},
+	res.json({
+		ok: true,
+		profile,
 	});
-	res.json({ ok: true });
 }
 /*
-export default withIronSessionApiRoute(withHandler("POST", handler), {
+export default withIronSessionApiRoute(withHandler("GET", handler), {
 	cookieName: "carrotsession",
 	password:
 		"argaervaerhjynrtghebgreehbgargaehgaegaerhgethaergargaerggvrggrgawfa",
@@ -39,8 +27,7 @@ export default withIronSessionApiRoute(withHandler("POST", handler), {
 
 export default withApiSession(
 	withHandler({
-		method: "POST",
+		method: "GET",
 		handler,
-		isPrivate: false,
 	})
 );
