@@ -39,7 +39,7 @@ export default withIronSessionApiRoute(withHandler("POST", handler), {
 
 export default withApiSession(
 	withHandler({
-		method: "POST",
+		methods: ["POST"],
 		handler,
 		isPrivate: false,
 	})
