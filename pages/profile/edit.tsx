@@ -3,9 +3,9 @@ import useUser from "@libs/client/useUser";
 import type { NextPage } from "next";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import Button from "../components/button";
-import Input from "../components/input";
-import Layout from "../components/layout";
+import Button from "../../components/button";
+import Input from "../../components/input";
+import Layout from "../../components/layout";
 
 interface EditProfileForm {
 	email?: string;
@@ -35,22 +35,49 @@ const EditProfile: NextPage = () => {
 		if (user?.name) setValue("name", user.name);
 		if (user?.email) setValue("email", user.email);
 		if (user?.phone) setValue("phone", user.phone);
+		if (user?.avatar)
+			setAvatarPreview(
+				`https://imagedelivery.net/fhkogDoSTeLvyDALpsIbnw/${user.avatar}/avatar`
+			);
 	}, [user, setValue]);
 
 	const [editProfile, { data, loading }] =
 		useMutation<EditPorfileResponse>(`/api/users/me`);
-	const onValid = ({ email, phone, name, avatar }: EditProfileForm) => {
+
+	const onValid = async ({ email, phone, name, avatar }: EditProfileForm) => {
 		if (loading) return;
 		if (email === "" && phone === "" && name === "") {
 			return setError("formErrors", {
 				message: "Email or Phone number are required. you need to choose one.",
 			});
 		}
-		editProfile({
-			email,
-			phone,
-			name,
-		});
+		if (avatar && avatar.length > 0 && user) {
+			const { uploadURL } = await (await fetch(`/api/files`)).json();
+
+			const form = new FormData();
+			form.append("file", avatar[0], user?.id + "");
+			const {
+				result: { id },
+			} = await (
+				await fetch(uploadURL, {
+					method: "POST",
+					body: form,
+				})
+			).json();
+
+			editProfile({
+				email,
+				phone,
+				name,
+				avatarId: id,
+			});
+		} else {
+			editProfile({
+				email,
+				phone,
+				name,
+			});
+		}
 	};
 	useEffect(() => {
 		if (data && !data.ok && data.error) {
@@ -66,6 +93,7 @@ const EditProfile: NextPage = () => {
 			setAvatarPreview(URL.createObjectURL(file));
 		}
 	}, [avatar]);
+
 	return (
 		<Layout canGoBack title="Edit Profile">
 			<form onSubmit={handleSubmit(onValid)} className="py-10 px-4 space-y-4">
@@ -76,10 +104,7 @@ const EditProfile: NextPage = () => {
 							className="w-14 h-14 rounded-full bg-slate-500"
 						/>
 					) : (
-						<div
-							src={avatarPreview}
-							className="w-14 h-14 rounded-full bg-slate-500"
-						/>
+						<div className="w-14 h-14 rounded-full bg-slate-500" />
 					)}
 					<label
 						htmlFor="picture"

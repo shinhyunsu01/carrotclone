@@ -7,7 +7,7 @@ const Chats: NextPage = () => {
 		<Layout hasTabBar title="채팅">
 			<div className="py-10 divide-y-[1px]">
 				{[1, 1, 1, 1, 1, 1, 1].map((_, i) => (
-					<Link href={`/charts/${i}`} key={i}>
+					<Link href={`/chats/${i}`} key={i}>
 						<a className="flex px-4  py-3 cursor-pointer items-center space-x-3">
 							<div className="w-10 h-10 rounded-full bg-slate-300" />
 							<div>
