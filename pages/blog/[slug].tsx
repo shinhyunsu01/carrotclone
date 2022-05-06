@@ -18,14 +18,23 @@ const Post: NextPage<{ post: string; data: any }> = ({ post, data }) => {
 };
 
 export function getStaticPaths() {
-	const files = readdirSync("./posts").map((file) => {
+	/*const files = readdirSync("./posts").map((file) => {
 		const [name, extension] = file.split(".");
 		return { params: { slug: name } };
-	});
+	});*/
+	// fallback에서 false반환하지 않은 모든 경로 getStaticPaths는 404 페이지 가 됩니다.
 
-	return {
+	// 가 실행 되면 next buildNext.js는 getStaticPaths 반환 되었는지 확인한 다음 에서 반환된 경로 만
+	// fallback: false 빌드 합니다 .
+
+	// 이 옵션은 생성할 경로가 적거나 새 페이지 데이터가 자주 추가되지 않는 경우에 유용합니다.
+	/* return {
 		paths: files,
 		fallback: false,
+	}; */
+	return {
+		paths: [],
+		fallback: "blocking",
 	};
 }
 

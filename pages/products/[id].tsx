@@ -1,4 +1,4 @@
-import type { NextPage } from "next";
+import type { GetStaticProps, GetStaticPaths, NextPage } from "next";
 import Button from "../../components/button";
 import Layout from "../../components/layout";
 import { useRouter } from "next/router";
@@ -10,6 +10,7 @@ import useMutation from "@libs/client/useMutation";
 import { cls } from "@libs/utils";
 import useUser from "@libs/client/useUser";
 import Image from "next/image";
+import client from "@libs/server/client";
 
 interface ProductWithUser extends Product {
 	user: User;
@@ -22,7 +23,11 @@ interface ItemDetailResponse {
 	isLiked: boolean;
 }
 
-const ItemDetail: NextPage = () => {
+const ItemDetail: NextPage<ItemDetailResponse> = ({
+	product,
+	relatedProducts,
+	isLiked,
+}) => {
 	const { user, isLoading } = useUser();
 
 	// hook 으로 mutate 함수 얻을수 있고 mutate(key)로 동일한 키를 사용하는 다른 swr hook 에게
@@ -44,14 +49,14 @@ const ItemDetail: NextPage = () => {
 		//서버에 추후에 보냄
 		toggleFav({});
 	};
-	console.log(data?.product?.user);
+
 	return (
 		<Layout canGoBack>
 			<div className="px-4 py-4">
 				<div className="mb-8">
 					<div className="relative pb-80">
 						<Image
-							src={`https://imagedelivery.net/fhkogDoSTeLvyDALpsIbnw/${data?.product.image}/public`}
+							src={`https://imagedelivery.net/fhkogDoSTeLvyDALpsIbnw/${product.image}/public`}
 							className=" bg-slate-300 object-cover"
 							layout="fill"
 						/>
@@ -60,14 +65,14 @@ const ItemDetail: NextPage = () => {
 						<Image
 							width={48}
 							height={48}
-							src={`https://imagedelivery.net/fhkogDoSTeLvyDALpsIbnw/${data?.product?.user.avatar}/avatar`}
+							src={`https://imagedelivery.net/fhkogDoSTeLvyDALpsIbnw/${product?.user.avatar}/avatar`}
 							className="w-12 h-12 rounded-full bg-slate-300"
 						/>
 						<div>
 							<p className="text-sm font-medium text-gray-700">
-								{data?.product?.user?.name}
+								{product?.user?.name}
 							</p>
-							<Link href={`/users/profiles/${data?.product?.user?.id}`}>
+							<Link href={`/users/profiles/${product?.user?.id}`}>
 								<a className="text-xs font-medium text-gray-500">
 									View profile &rarr;
 								</a>
@@ -76,13 +81,13 @@ const ItemDetail: NextPage = () => {
 					</div>
 					<div className="mt-5">
 						<h1 className="text-3xl font-bold text-gray-900">
-							{data?.product?.name}
+							{product?.name}
 						</h1>
 						<p className="text-3xl block mt-3 text-gray-900">
-							${data?.product?.price}
+							${product?.price}
 						</p>
 						<p className=" text-base my-6 text-gray-700">
-							{data?.product?.description}
+							{product?.description}
 						</p>
 						<div className="flex items-center justify-between space-x-2">
 							<Button large text="Talk to seller" />
@@ -91,12 +96,12 @@ const ItemDetail: NextPage = () => {
 								onClick={onFavClick}
 								className={cls(
 									"p-3 rounded-md flex items-center justify-center",
-									data?.isLiked
+									isLiked
 										? " text-red-400 hover:bg-gray-100 hover:text-red-500"
 										: "text-gray-400 hover:bg-gray-100 hover:text-gray-500"
 								)}
 							>
-								{data?.isLiked ? (
+								{isLiked ? (
 									<svg
 										className="w-6 h-6"
 										fill="currentColor"
@@ -148,4 +153,67 @@ const ItemDetail: NextPage = () => {
 		</Layout>
 	);
 };
+
+export const getStaticPaths: GetStaticPaths = () => {
+	// fallback에서 'blocking'반환하지 않은 새 경로 는 SSR과 동일하게 생성 getStaticPaths될 때까지
+	//기다린 다음 HTML(따라서 차단하는 이유 ) 이후 요청을 위해 캐시되어 경로당 한 번만 발생합니다.
+
+	//기본적으로 생성된 페이지를 업데이트 하지 않는다.
+	return {
+		paths: [],
+
+		//
+		fallback: "blocking",
+	};
+};
+// 1. getStaticProps 이 페이지를 정적으로 만들겠다...
+// 2. 얼마나 많은 페이지 만들지는 getStaticPaths 로 이동..
+export const getStaticProps: GetStaticProps = async (ctx) => {
+	if (!ctx?.params?.id) {
+		return {
+			props: {},
+		};
+	}
+	const product = await client.product.findUnique({
+		where: {
+			id: +ctx.params.id.toString(),
+		},
+		include: {
+			user: {
+				select: {
+					id: true,
+					name: true,
+					avatar: true,
+				},
+			},
+		},
+	});
+	const terms = product?.name.split(" ").map((word) => ({
+		name: {
+			contains: word,
+		},
+	}));
+
+	//search
+	const relatedProducts = await client.product.findMany({
+		where: {
+			OR: terms,
+			AND: {
+				id: {
+					not: product?.id,
+				},
+			},
+		},
+	});
+	const isLiked = false;
+	//await new Promise((resolve) => setTimeout(resolve, 10000));
+	return {
+		props: {
+			product: JSON.parse(JSON.stringify(product)),
+			relatedProducts: JSON.parse(JSON.stringify(relatedProducts)),
+			isLiked,
+		},
+	};
+};
+
 export default ItemDetail;
