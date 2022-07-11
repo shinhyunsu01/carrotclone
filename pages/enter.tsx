@@ -105,7 +105,7 @@ export default function Enter() {
 							</h5>
 							<div className="grid pb-4 w-full mt-8 grid-cols-2 gap-16">
 								<button
-									className={`pb-4 border-b-2 font-medium ${
+									className={`pb-4 border-b-2 border-spacing-2 font-medium ${
 										method === "email"
 											? "border-orange-500 text-orange-400"
 											: "border-transparent text-gray-500"
